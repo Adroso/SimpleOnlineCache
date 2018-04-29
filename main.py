@@ -1,5 +1,7 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import redis
+import cgi
+import json
 
 CACHE_SERVER_ADDRESS = 'localhost'
 CACHE_SERVER_PORT = 8090
@@ -14,7 +16,14 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
         pass
 
     def do_POST(self):
-        pass
+        path = str(self.path)
+        if path == '/messages':
+            c_type, p_dict = cgi.parse_header(self.headers.get('Content-Type'))
+
+            if c_type == 'application/json':
+                data_len = int(self.headers.get('Content-Length'))
+                incoming_data = self.rfile.read(data_len)
+                loaded_data = json.loads(incoming_data)
 
 
 def run():
