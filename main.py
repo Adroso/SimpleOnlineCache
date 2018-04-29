@@ -15,7 +15,25 @@ redis_server = redis.StrictRedis(host=REDIS_HOST_ADDRESS, port=REDIS_PORT, db=0)
 
 class ServerCacheHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        pass
+        path = str(self.path)
+        if path.startswith('/messages'):
+            document_id = path.split('/')[-1]
+            if redis_server.exists(document_id):
+                returning_data = redis_server.get(document_id)
+                returning_data_package = json.loads(returning_data)
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps(returning_data_package).encode("ASCII"))
+            else:
+                self.send_response(403, 'Resource not found')
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+        else:
+            self.send_response(403, 'Resource not found')
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+
 
     def do_POST(self):
         path = str(self.path)
