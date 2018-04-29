@@ -75,6 +75,11 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
 
+        if path == '/clearcache':
+            redis_server.flushall()
+
+
+
 
 def run():
     server_url = (CACHE_SERVER_ADDRESS, CACHE_SERVER_PORT)
