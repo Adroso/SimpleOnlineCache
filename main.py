@@ -16,12 +16,11 @@ redis_server = redis.StrictRedis(host=REDIS_HOST_ADDRESS, port=REDIS_PORT, db=0)
 
 class ServerCacheHandler(BaseHTTPRequestHandler):
     def validate_json(self, json_to_validate):
+        """Verifies if a json is of a desired schema and returns True of False depending on outcome."""
         desired_schema = {"type": "object",
                           "properties": {
                               "id": {"type": "number"},
-                              "message": {"type": "string"}
-                          }
-                          }
+                              "message": {"type": "string"}}}
         try:
             jsonschema.validate(json_to_validate, desired_schema)
             return True
@@ -29,6 +28,7 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
             return False
 
     def do_GET(self):
+        """Method called on GET request, only handles if request is to /messages otherwise returns 403"""
         path = str(self.path)
         if path.startswith('/messages'):
             document_id = path.split('/')[-1]
@@ -50,6 +50,9 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
 
 
     def do_POST(self):
+        """Method called on POST, includes handling of input to /messages, ability to clear cache through /clearcache
+           And set a new TTL while server is running.
+        """
         path = str(self.path)
         if path == '/messages':
             c_type, p_dict = cgi.parse_header(self.headers.get('Content-Type'))
@@ -67,7 +70,6 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
                 else:
                     redis_server.set(loaded_data['id'], json.dumps(loaded_data))
                     redis_server.expire(loaded_data['id'], TIME_TO_LIVE)
-
                     self.send_response(200)
                     self.end_headers()
             else:
@@ -75,14 +77,19 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
 
-        if path == '/clearcache':  # clears all records in redis cache
+        elif path == '/clearcache':  # clears all records in redis cache
             redis_server.flushall()
             self.send_response(200)
             self.end_headers()
 
-        if path.startswith('/ttl'):  # used to adjust the future TTL on post documents
+        elif path.startswith('/ttl'):  # used to adjust the future TTL on post documents
             new_ttl = int(path.split('/')[-1])
             #TODO finish implementation
+
+        else:
+            self.send_response(403, 'Resource not found')
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
 
 
 def run():
