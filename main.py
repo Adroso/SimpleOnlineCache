@@ -59,11 +59,17 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
                 incoming_data = self.rfile.read(data_len)
                 loaded_data = json.loads(incoming_data)
 
-                redis_server.set(loaded_data['id'], json.dumps(loaded_data))
-                redis_server.expire(loaded_data['id'], TIME_TO_LIVE)
+                if not self.validate_json(loaded_data):
+                    self.send_response(400, 'Bad Request, Document Malformed')
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
 
-                self.send_response(200)
-                self.end_headers()
+                else:
+                    redis_server.set(loaded_data['id'], json.dumps(loaded_data))
+                    redis_server.expire(loaded_data['id'], TIME_TO_LIVE)
+
+                    self.send_response(200)
+                    self.end_headers()
             else:
                 self.send_response(403, 'Resource not found')
                 self.send_header('Content-Type', 'application/json')
