@@ -2,6 +2,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import redis
 import cgi
 import json
+import jsonschema
 
 CACHE_SERVER_ADDRESS = 'localhost'
 CACHE_SERVER_PORT = 8090
@@ -14,6 +15,19 @@ TIME_TO_LIVE = 30  # seconds
 redis_server = redis.StrictRedis(host=REDIS_HOST_ADDRESS, port=REDIS_PORT, db=0)
 
 class ServerCacheHandler(BaseHTTPRequestHandler):
+    def validate_json(self, json_to_validate):
+        desired_schema = {"type": "object",
+                          "properties": {
+                              "id": {"type": "number"},
+                              "message": {"type": "string"}
+                          }
+                          }
+        try:
+            jsonschema.validate(json_to_validate, desired_schema)
+            return True
+        except jsonschema.ValidationError:
+            return False
+
     def do_GET(self):
         path = str(self.path)
         if path.startswith('/messages'):
