@@ -15,6 +15,16 @@ TIME_TO_LIVE = 30  # seconds
 redis_server = redis.StrictRedis(host=REDIS_HOST_ADDRESS, port=REDIS_PORT, db=0)
 
 class ServerCacheHandler(BaseHTTPRequestHandler):
+    def send_403(self):
+        self.send_response(403, 'Resource not found')
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+
+    def send_200(self):
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+
     def validate_json(self, json_to_validate):
         """Verifies if a json is of a desired schema and returns True of False depending on outcome."""
         desired_schema = {"type": "object",
@@ -35,18 +45,12 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
             if redis_server.exists(document_id):
                 returning_data = redis_server.get(document_id)
                 returning_data_package = json.loads(returning_data)
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
+                self.send_200()
                 self.wfile.write(json.dumps(returning_data_package).encode("ASCII"))
             else:
-                self.send_response(403, 'Resource not found')
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
+                self.send_403()
         else:
-            self.send_response(403, 'Resource not found')
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
+            self.send_403()
 
 
     def do_POST(self):
@@ -70,26 +74,20 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
                 else:
                     redis_server.set(loaded_data['id'], json.dumps(loaded_data))
                     redis_server.expire(loaded_data['id'], TIME_TO_LIVE)
-                    self.send_response(200)
-                    self.end_headers()
+                    self.send_200()
             else:
-                self.send_response(403, 'Resource not found')
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
+                self.send_403()
 
         elif path == '/clearcache':  # clears all records in redis cache
             redis_server.flushall()
-            self.send_response(200)
-            self.end_headers()
+            self.send_200()
 
         elif path.startswith('/ttl'):  # used to adjust the future TTL on post documents
             new_ttl = int(path.split('/')[-1])
             #TODO finish implementation
 
         else:
-            self.send_response(403, 'Resource not found')
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
+            self.send_403()
 
 
 def run():
