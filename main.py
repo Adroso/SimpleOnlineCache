@@ -9,6 +9,8 @@ CACHE_SERVER_PORT = 8090
 REDIS_HOST_ADDRESS = 'localhost'
 REDIS_PORT = 6379
 
+TIME_TO_LIVE = 30  # seconds
+
 redis_server = redis.StrictRedis(host=REDIS_HOST_ADDRESS, port=REDIS_PORT, db=0)
 
 class ServerCacheHandler(BaseHTTPRequestHandler):
@@ -24,6 +26,16 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
                 data_len = int(self.headers.get('Content-Length'))
                 incoming_data = self.rfile.read(data_len)
                 loaded_data = json.loads(incoming_data)
+
+                redis_server.set(loaded_data['id'], json.dumps(loaded_data))
+                redis_server.expire(loaded_data['id'], TIME_TO_LIVE)
+
+                self.send_response(200)
+                self.end_headers()
+            else:
+                self.send_response(403, 'Resource not found')
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
 
 
 def run():
