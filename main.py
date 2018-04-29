@@ -77,6 +77,8 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
 
         if path == '/clearcache':  # clears all records in redis cache
             redis_server.flushall()
+            self.send_response(200)
+            self.end_headers()
 
         if path.startswith('/ttl'):  # used to adjust the future TTL on post documents
             new_ttl = int(path.split('/')[-1])
