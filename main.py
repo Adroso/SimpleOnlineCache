@@ -75,10 +75,12 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
 
-        if path == '/clearcache':
+        if path == '/clearcache':  # clears all records in redis cache
             redis_server.flushall()
 
-
+        if path.startswith('/ttl'):  # used to adjust the future TTL on post documents
+            new_ttl = int(path.split('/')[-1])
+            #TODO finish implementation
 
 
 def run():
