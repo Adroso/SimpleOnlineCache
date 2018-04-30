@@ -8,12 +8,11 @@ CACHE_SERVER_ADDRESS = 'localhost'
 CACHE_SERVER_PORT = 8090
 REDIS_HOST_ADDRESS = 'localhost'
 REDIS_PORT = 6379
-TIME_TO_LIVE = 30  # seconds
 
 redis_server = redis.StrictRedis(host=REDIS_HOST_ADDRESS, port=REDIS_PORT, db=0)
 
 class ServerCacheHandler(BaseHTTPRequestHandler):
-    time_to_live = 30
+    time_to_live = 30  # seconds
 
     def send_403(self):
         self.send_response(403, 'Resource not found')
@@ -52,10 +51,8 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
         else:
             self.send_403()
 
-
     def do_POST(self):
-        """Method called on POST, includes handling of input to /messages, ability to clear cache through /clearcache
-           And set a new TTL while server is running.
+        """Method called on POST request, includes handling of: input to /messages, clear cache through /clearcache, and dynamic cache /ttl
         """
         path = str(self.path)
         if path == '/messages':
@@ -86,17 +83,15 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
         elif path.startswith('/ttl'):  # used to adjust the future TTL on post documents
             new_ttl = int(path.split('/')[-1])
             ServerCacheHandler.time_to_live = new_ttl
-
+            self.send_200()
         else:
             self.send_403()
-
 
 def run():
     server_url = (CACHE_SERVER_ADDRESS, CACHE_SERVER_PORT)
     http_start = HTTPServer(server_url, ServerCacheHandler)
     print("Server Started....  Running on Port:", CACHE_SERVER_PORT)
     http_start.serve_forever()
-
 
 if __name__ == '__main__':
     run()
