@@ -13,6 +13,7 @@ TIME_TO_LIVE = 30  # seconds
 redis_server = redis.StrictRedis(host=REDIS_HOST_ADDRESS, port=REDIS_PORT, db=0)
 
 class ServerCacheHandler(BaseHTTPRequestHandler):
+    time_to_live = 30
 
     def send_403(self):
         self.send_response(403, 'Resource not found')
@@ -72,7 +73,8 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
 
                 else:
                     redis_server.set(loaded_data['id'], json.dumps(loaded_data))
-                    redis_server.expire(loaded_data['id'], TIME_TO_LIVE)
+                    print(self.time_to_live)
+                    redis_server.expire(loaded_data['id'], self.time_to_live)
                     self.send_200()
             else:
                 self.send_403()
@@ -83,7 +85,7 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
 
         elif path.startswith('/ttl'):  # used to adjust the future TTL on post documents
             new_ttl = int(path.split('/')[-1])
-            # TODO set dynamic TTL
+            ServerCacheHandler.time_to_live = new_ttl
 
         else:
             self.send_403()
