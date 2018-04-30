@@ -6,15 +6,18 @@ import jsonschema
 
 CACHE_SERVER_ADDRESS = 'localhost'
 CACHE_SERVER_PORT = 8090
-
 REDIS_HOST_ADDRESS = 'localhost'
 REDIS_PORT = 6379
-
 TIME_TO_LIVE = 30  # seconds
 
 redis_server = redis.StrictRedis(host=REDIS_HOST_ADDRESS, port=REDIS_PORT, db=0)
 
 class ServerCacheHandler(BaseHTTPRequestHandler):
+    time_to_live = 30
+
+    def get_current_ttl(self):
+        return self.time_to_live
+
     def send_403(self):
         self.send_response(403, 'Resource not found')
         self.send_header('Content-Type', 'application/json')
@@ -73,7 +76,8 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
 
                 else:
                     redis_server.set(loaded_data['id'], json.dumps(loaded_data))
-                    redis_server.expire(loaded_data['id'], TIME_TO_LIVE)
+                    print(self.get_current_ttl())
+                    redis_server.expire(loaded_data['id'], self.get_current_ttl())
                     self.send_200()
             else:
                 self.send_403()
@@ -84,7 +88,8 @@ class ServerCacheHandler(BaseHTTPRequestHandler):
 
         elif path.startswith('/ttl'):  # used to adjust the future TTL on post documents
             new_ttl = int(path.split('/')[-1])
-            #TODO finish implementation
+            self.time_to_live = new_ttl
+            print("time to live changed", self.get_current_ttl())
 
         else:
             self.send_403()
